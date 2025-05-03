@@ -4,7 +4,10 @@ from typing import Callable
 import asyncio
 import re
 
+from ib_async import Stock
+
 from state import State
+from strategy import StrategyAction, strategy_action_parser
 
 class Command(ABC):
     # TODO: create error sum type
@@ -12,42 +15,38 @@ class Command(ABC):
     async def execute(self, State) -> None:
         pass
 
-class SymbolCommandTy(Enum):
-    # Start/continue buying
-    Start = 0
-    # Stop buying
-    End = 1
-    # Sell all assets and stop
-    Kill = 2
-
 # Commands that act on stock symbols
 class SymbolCommand(Command):
     exchange: str
     symbol: str
-    ty: SymbolCommandTy
+    action: StrategyAction
 
-    def __init__(self, exchange: str, symbol: str, ty: SymbolCommandTy) -> None:
+    def __init__(self, exchange: str, symbol: str, action: StrategyAction) -> None:
         self.symbol = symbol
-        self.ty = ty
+        self.action = action
+
+    def to_stock(self) -> Stock:
+        return Stock(symbol = self.symbol, exchange = self.exchange)
 
     async def execute(self, state: State) -> None:
-        pass
+        match (self.action, state.strategy_handlers.get(self.to_stock())):
+            case (StrategyAction.Start, _):
+                await state.start_stock(self.to_stock())
+            case (action, (tx, _)):
+                await tx.put(action)
 
 def symbol_command_parser(command: str) -> None | Command:
     match re.match(r"(\w+)/(\w+)@(\w+)", command):
         case re.Match() as matches:
             (ty, symbol, exchange) = matches.group(1, 2, 3)
 
-            match ty:
-                case "start":
-                    return SymbolCommand(exchange, symbol, SymbolCommandTy.Start)
-                case "end":
-                    return SymbolCommand(exchange, symbol, SymbolCommandTy.End)
-                case "kill":
-                    return SymbolCommand(exchange, symbol, SymbolCommandTy.Kill)
+            match strategy_action_parser(ty):
+                case str() as ty:
+                    return SymbolCommand(exchange, symbol, ty)
 
     return None
 
-COMMAND_PARSERS: list[Callable[[str], None | Command]] = [
-    symbol_command_parser
-]
+def command_parsers() -> list[Callable[[str], None | Command]]:
+    return [
+        symbol_command_parser,
+    ]

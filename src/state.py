@@ -1,11 +1,13 @@
+from asyncio import create_task, Queue, Task
 from enum import Enum
 from functools import partial
 from itertools import tee
 from operator import itemgetter
 import os
 
-from ib_async import IB
+from ib_async import IB, Stock, TickData
 
+from strategy import StrategyAction, strategy_handler
 from utils import compose, map_snd
 
 class EnvVar(Enum):
@@ -35,10 +37,22 @@ class EnvVarError:
 
 class State:
     alive: bool = True
-    ib: IB = IB()
+    ib: IB
+    # should only be used for transmission
+    strategy_handlers: dict[Stock, tuple[Queue[StrategyAction], Task[None]]]
 
     def __init__(self, ib: IB) -> None:
         self.ib = ib
+
+    # Start trading on this stock
+    async def start_stock(self, stock: Stock) -> None:
+        match self.strategy_handlers.get(stock, None):
+            case (tx, _):
+                await tx.put(StrategyAction.Start)
+            case None:
+                tx: Queue[StrategyAction] = Queue()
+
+                self.strategy_handlers[stock] = (tx, create_task(strategy_handler(tx, self.ib.reqMktData(stock))))
 
 async def create_state() -> EnvVarError | State:
     (env_vars, env_vars_filter) = tee(map(lambda v:(v, compose(EnvVar.__str__, os.environ.get)(v)), ENV_VARS))

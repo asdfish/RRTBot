@@ -1,8 +1,9 @@
 import asyncio
 import sys
 
-from command import Command, COMMAND_PARSERS
+from command import Command, command_parsers
 from state import create_state, EnvVarError, State
+import strategy
 
 async def main() -> int:
     match await create_state():
@@ -10,10 +11,12 @@ async def main() -> int:
             print(err)
             return 1
         case State() as state:
+            asyncio.create_task(state.ib.runAsync())
+
             while state.alive:
                 line = (await asyncio.to_thread(sys.stdin.readline)).strip()
 
-                match next(filter(lambda cmd:cmd is not None, map(lambda p:p(line), COMMAND_PARSERS)), None):
+                match next(filter(lambda cmd:cmd is not None, map(lambda p:p(line), command_parsers())), None):
                     case None:
                         print(f"failed to parse command `{line}`")
                     case Command() as cmd:
