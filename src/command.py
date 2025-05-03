@@ -9,11 +9,7 @@ from state import State
 class Command(ABC):
     # TODO: create error sum type
     @abstractmethod
-    async def execute(self, State):
-        pass
-
-    @abstractmethod
-    def parse(command: str) -> None | Self:
+    async def execute(self, State) -> None:
         pass
 
 class SymbolCommandTy(Enum):
@@ -24,37 +20,34 @@ class SymbolCommandTy(Enum):
     # Sell all assets and stop
     Kill = 2
 
-    def parse(ty: str) -> None | Self:
-        match ty:
-            case "start":
-                return SymbolCommandTy.Start
-            case "end":
-                return SymbolCommandTy.End
-            case "kill":
-                return SymbolCommandTy.Kill
-
 # Commands that act on stock symbols
 class SymbolCommand(Command):
     exchange: str
     symbol: str
     ty: SymbolCommandTy
 
-    def __init__(self, exchange: str, symbol: str, ty: SymbolCommandTy):
+    def __init__(self, exchange: str, symbol: str, ty: SymbolCommandTy) -> None:
         self.symbol = symbol
         self.ty = ty
 
-    async def execute(self, state: State):
+    async def execute(self, state: State) -> None:
         pass
 
-    def parse(command: str) -> None | Self:
-        match re.match(r"(\w+)/(\w+)@(\w+)", command):
-            case re.Match() as matches:
-                (ty, symbol, exchange) = matches.group(1, 2, 3)
+def symbol_command_parser(command: str) -> None | Command:
+    match re.match(r"(\w+)/(\w+)@(\w+)", command):
+        case re.Match() as matches:
+            (ty, symbol, exchange) = matches.group(1, 2, 3)
 
-                match SymbolCommandTy.parse(ty):
-                    case SymbolCommandTy() as ty:
-                        return SymbolCommand(exchange, symbol, ty)
+            match ty:
+                case "start":
+                    return SymbolCommand(exchange, symbol, SymbolCommandTy.Start)
+                case "end":
+                    return SymbolCommand(exchange, symbol, SymbolCommandTy.End)
+                case "kill":
+                    return SymbolCommand(exchange, symbol, SymbolCommandTy.Kill)
 
-COMMAND_PARSERS: list[Callable[str, None | Self]] = [
-    SymbolCommand.parse
+    return None
+
+COMMAND_PARSERS: list[Callable[[str], None | Command]] = [
+    symbol_command_parser
 ]

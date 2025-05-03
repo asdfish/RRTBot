@@ -2,10 +2,10 @@ import asyncio
 import sys
 
 from command import Command, COMMAND_PARSERS
-from state import EnvVar, EnvVarError, State
+from state import create_state, EnvVar, EnvVarError, State
 
 async def main() -> int:
-    match await State.new():
+    match await create_state():
         case EnvVarError() as err:
             print(err)
             return 1
