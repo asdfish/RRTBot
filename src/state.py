@@ -21,10 +21,11 @@ class EnvVar(Enum):
             case EnvVar.Port:
                 return "RRTBOT_IB_API_PORT"
 
-ENV_VARS: list[EnvVar] = [
-    EnvVar.Host,
-    EnvVar.Port,
-]
+def env_vars() -> list[EnvVar]:
+    return [
+        EnvVar.Host,
+        EnvVar.Port,
+    ]
 
 class EnvVarError:
     var: EnvVar
@@ -55,7 +56,7 @@ class State:
                 self.strategy_handlers[stock] = (tx, create_task(strategy_handler(tx, self.ib.reqMktData(stock))))
 
 async def create_state() -> EnvVarError | State:
-    (env_vars, env_vars_filter) = tee(map(lambda v:(v, compose(EnvVar.__str__, os.environ.get)(v)), ENV_VARS))
+    (env_vars, env_vars_filter) = tee(map(lambda v:(v, compose(EnvVar.__str__, os.environ.get)(v)), env_vars()))
     match next(map(compose(itemgetter(0), EnvVarError), filter(lambda v:v[1] is None, env_vars_filter)), None):
         case None:
             ib = IB()
