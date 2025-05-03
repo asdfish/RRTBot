@@ -13,12 +13,11 @@ async def main() -> int:
             while state.alive:
                 line = (await asyncio.to_thread(sys.stdin.readline)).strip()
 
-                for command_parser in COMMAND_PARSERS:
-                    match command_parser(line):
-                        case None:
-                            print(f"failed to parse command `{line}`")
-                        case Command() as command:
-                            await command.execute(state)
+                match next(filter(lambda cmd:cmd is not None, map(lambda p:p(line), COMMAND_PARSERS)), None):
+                    case None:
+                        print(f"failed to parse command `{line}`")
+                    case Command() as cmd:
+                        await cmd.execute(state)
             return 0
         case _:
             return 1
