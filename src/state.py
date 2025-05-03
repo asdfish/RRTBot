@@ -47,7 +47,7 @@ class State:
         match next(map(compose(itemgetter(0), EnvVarError), filter(lambda v:v[1] is None, env_vars_filter)), None):
             case None:
                 ib = IB()
-                # await partial(IB.connectAsync, ib, clientId = 1)(*map_snd(int, tuple(map(itemgetter(1), env_vars))))
+                await partial(IB.connectAsync, ib, clientId = 1)(*map_snd(int, tuple(map(itemgetter(1), env_vars))))
                 return State(ib)
             case EnvVarError() as err:
                 return err

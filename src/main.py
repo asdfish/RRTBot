@@ -18,6 +18,7 @@ async def main() -> int:
                         print(f"failed to parse command `{line}`")
                     case Command() as cmd:
                         await cmd.execute(state)
+
             return 0
         case _:
             return 1
