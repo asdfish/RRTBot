@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Callable, Self
+from typing import Callable
 import asyncio
 import re
 

@@ -2,7 +2,6 @@ from enum import Enum
 from functools import partial
 from itertools import tee
 from operator import itemgetter
-from typing import Iterable, Self
 import os
 
 from ib_async import IB

@@ -2,7 +2,7 @@ import asyncio
 import sys
 
 from command import Command, COMMAND_PARSERS
-from state import create_state, EnvVar, EnvVarError, State
+from state import create_state, EnvVarError, State
 
 async def main() -> int:
     match await create_state():
