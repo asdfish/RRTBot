@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from asyncio import Queue
 from enum import Enum
 from typing import Callable
 import asyncio
@@ -32,8 +33,8 @@ class SymbolCommand(Command):
         match (self.action, state.strategy_handlers.get(self.to_stock())):
             case (StrategyAction.Start, _):
                 await state.start_stock(self.to_stock())
-            case (action, (tx, _)):
-                await tx.put(action)
+            case (action, (Queue(action_tx), _)):
+                await action_tx.put(action)
 
 def symbol_command_parser(command: str) -> None | Command:
     match re.match(r"(\w+)/(\w+)@(\w+)", command):
